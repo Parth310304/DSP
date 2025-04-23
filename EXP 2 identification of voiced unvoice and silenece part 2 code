@@ -1,0 +1,72 @@
+% Clear workspace and close figures
+clear;
+clc;
+close all;
+
+% Load the audio signal
+[audioSignal, fs] = audioread('8_Channel_ID.wav'); % Replace with your audio file
+audioSignal = audioSignal(:, 1); % Use the first channel if stereo
+
+% Display original sampling rate
+disp(['Original Sampling Rate: ', num2str(fs), ' Hz']);
+
+% Plot the original audio signal (time domain)
+t = (0:length(audioSignal)-1) / fs;
+figure;
+subplot(2,1,1);
+plot(t, audioSignal);
+xlabel('Time (seconds)');
+ylabel('Amplitude');
+title('Original Audio Signal');
+grid on;
+
+% Perform Low-Pass Filtering (to remove high-frequency noise)
+fc = 3000; % Cut-off frequency (Hz)
+order = 6; % Filter order
+[b, a] = butter(order, fc/(fs/2), 'low'); % Design Butterworth low-pass filter
+filteredSignal = filter(b, a, audioSignal);
+
+% Plot the filtered audio signal
+subplot(2,1,2);
+plot(t, filteredSignal);
+xlabel('Time (seconds)');
+ylabel('Amplitude');
+title('Filtered Audio Signal (Low-pass at 3 kHz)');
+grid on;
+
+% Compute and plot frequency spectrum before and after filtering
+n = length(audioSignal);
+f = (0:n-1)*(fs/n); % Frequency axis
+Y_original = abs(fft(audioSignal));
+Y_filtered = abs(fft(filteredSignal));
+figure;
+subplot(2,1,1);
+plot(f(1:n/2), Y_original(1:n/2));
+xlabel('Frequency (Hz)');
+ylabel('Magnitude');
+title('Frequency Spectrum of Original Signal');
+grid on;
+subplot(2,1,2);
+plot(f(1:n/2), Y_filtered(1:n/2));
+xlabel('Frequency (Hz)');
+ylabel('Magnitude');
+title('Frequency Spectrum of Filtered Signal');
+grid on;
+
+% Resample the audio signal to a lower sampling rate
+newFs = 16000; % Target sampling rate (Hz)
+resampledSignal = resample(filteredSignal, newFs, fs);
+
+% Display new sampling rate
+disp(['Resampled Sampling Rate: ', num2str(newFs), ' Hz']);
+
+% Play the original and processed audio
+disp('Playing original audio...');
+sound(audioSignal, fs);
+pause(length(audioSignal)/fs + 1);
+disp('Playing filtered and resampled audio...');
+sound(resampledSignal, newFs);
+
+% Save the processed audio
+audiowrite('processed_speech.wav', resampledSignal, newFs);
+disp('Processed audio saved as processed_speech.wav');
